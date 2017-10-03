@@ -13,6 +13,11 @@ const canvas = document.getElementById('stage')
 }
 , blkW = 40
 , blkH = 10
+, buttons = {
+    Left: 0,
+    Right: 0,
+    Space: 0
+}
 
 let then = Date.now()
 , state = gameStates.RUNNING
@@ -26,7 +31,10 @@ let then = Date.now()
 , py = 780
 , pw = 60
 , ph = 20
-, pV = 8
+, pA = 0.895
+, pD = 0.055
+, pS = 1.3
+, pV = 0
 , tries = 3
 , level = 1
 , blocks = {
@@ -36,22 +44,38 @@ let then = Date.now()
 canvas.width = sw
 canvas.height = sh
 
+document.addEventListener('keydown', ev => {
+    switch (ev.key) {
+    case 'ArrowLeft':
+        if (!buttons.Left) buttons.Left = 1
+        break;
+    case 'ArrowRight':
+        if (!buttons.Right) buttons.Right = 1
+        break;
+    case ' ':
+        if (!buttons.Space) buttons.Space = 1
+        break;
+    }
+    console.log(buttons)
+})
+
+document.addEventListener('keyup', ev => {
+    switch (ev.key) {
+    case 'ArrowLeft':
+        if (buttons.Left) buttons.Left = 0
+        break;
+    case 'ArrowRight':
+        if (buttons.Right) buttons.Right = 0
+        break;
+    case ' ':
+        if (buttons.Space) buttons.Space = 0
+    }
+})
+
+const btn = name => name in buttons && buttons[name]
+
 window.onkeypress = ev => {
-    if (state === gameStates.RUNNING) {
-        switch (ev.key) {
-        case 'ArrowLeft':
-            px -= pV
-            break;
-        case 'ArrowRight':
-            px += pV
-            break;
-        case ' ':
-            if (bState === ballStates.GRABBED) {
-                bState = ballStates.BOUNCING
-            }
-            break;
-        }
-    } else {
+    if (state === gameStates.GAMEOVER) {
         switch (ev.key) {
         case ' ':
             tries = 3
@@ -67,7 +91,22 @@ window.onkeypress = ev => {
 const clamp = (v, min, max) =>
       v < min ? min : v > max ? max : v
 
+const updatePaddle = () => {
+    if (bState === ballStates.GRABBED && btn('Space'))
+        bState = ballStates.BOUNCING
+    if (btn('Left')) pV = -1 * pA
+    if (btn('Right')) pV = 1 * pA
+    const pVel = Math.abs(pV) / pS
+    ,     pXspd = Math.sign(pV)
+    pV -= pD * pV * pVel
+    if (pXspd != Math.sign(pV)) pV = 0
+    px = px + (pS * pV)
+    if (px - (pw / 2) < 0 || px + (pw / 2) > sw) pV = -pV
+    px += pS * pV
+}
+
 const update = dt => {
+    updatePaddle()
     if (bState === ballStates.BOUNCING) {
         if ((by - br / 2) + byV <= 0) {
             byV = -byV
