@@ -32,7 +32,7 @@ let then = Date.now()
 , pw = 60
 , ph = 20
 , pA = 0.895
-, pD = 0.055
+, pD = 0.155
 , pS = 1.3
 , pV = 0
 , tries = 3
@@ -74,20 +74,6 @@ document.addEventListener('keyup', ev => {
 
 const btn = name => name in buttons && buttons[name]
 
-window.onkeypress = ev => {
-    if (state === gameStates.GAMEOVER) {
-        switch (ev.key) {
-        case ' ':
-            tries = 3
-            bState = ballStates.GRABBED
-            px = sw / 2
-            bx = px
-            by = py - (ph + 8)
-            state = gameStates.RUNNING
-        }
-    }
-}
-
 const clamp = (v, min, max) =>
       v < min ? min : v > max ? max : v
 
@@ -106,6 +92,14 @@ const updatePaddle = () => {
 }
 
 const update = dt => {
+    if (state === gameStates.GAMEOVER && btn('Space')) {
+        tries = 3
+        bState = ballStates.GRABBED
+        px = sw / 2
+        bx = px
+        by = py - (ph + 8)
+        state = gameStates.RUNNING
+    }
     updatePaddle()
     if (bState === ballStates.BOUNCING) {
         if ((by - br / 2) + byV <= 0) {
