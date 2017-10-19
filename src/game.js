@@ -19,6 +19,8 @@ const canvas = document.getElementById('stage')
     Space: 0
 }
 
+const copyLevel = lvl => Array.from(lvl.map(r => r.slice(0)))
+
 let then = Date.now()
 , state = gameStates.RUNNING
 , br = 12.0 // b - ball
@@ -38,8 +40,10 @@ let then = Date.now()
 , tries = 3
 , level = 1
 , blocks = {
-    1: [[1, 1, 1, 1, 1, 1]]
+    1: [[1, 1, 1, 1, 1, 1]],
+    2: [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
 }
+, currentLevel = copyLevel(blocks[level])
 
 canvas.width = sw
 canvas.height = sh
@@ -77,6 +81,9 @@ const btn = name => name in buttons && buttons[name]
 const clamp = (v, min, max) =>
       v < min ? min : v > max ? max : v
 
+const flatten = arr =>
+      arr.reduce((acc, cur) => acc.concat(cur), [])
+
 const updatePaddle = () => {
     if (bState === ballStates.GRABBED && btn('Space'))
         bState = ballStates.BOUNCING
@@ -106,10 +113,9 @@ const ballIntersects = (x, y, w, h) => {
 }
 
 const doBlockCollisions = () => {
-    const currentBlocks = blocks[level]
-    for (let j = 0; j < currentBlocks.length; j++) {
-        for (let i = 0; i < currentBlocks[j].length; i++) {
-            if (currentBlocks[j][i] != 0) {
+    for (let j = 0; j < currentLevel.length; j++) {
+        for (let i = 0; i < currentLevel[j].length; i++) {
+            if (currentLevel[j][i] != 0) {
                 const blkX = 20 + (i * blkW) * 1.4
                 ,     blkY = (j * blkH) + 20
                 const [distX, distY] = ballIntersects(blkX, blkY, blkW, blkH)
@@ -119,10 +125,19 @@ const doBlockCollisions = () => {
                     } else {
                         bxV = -bxV
                     }
-                    currentBlocks[j][i] = 0
+                    currentLevel[j][i] = 0
                 }
             }
         }
+    }
+}
+
+const checkForLevelComplete = () => {
+    const complete = flatten(currentLevel)
+          .reduce((sum, v) => sum + v, 0)
+    if (complete === 0) {
+        level++;
+        currentLevel = copyLevel(blocks[level])
     }
 }
 
@@ -150,6 +165,8 @@ const update = dt => {
             } else {
                 tries = 'GAME OVER'
                 state = gameStates.GAMEOVER
+                level = 1
+                currentLevel = copyLevel(blocks[level])
             }
         }
         if ((bx - bx / 2) + bxV <= 0) {
@@ -159,6 +176,7 @@ const update = dt => {
         }
 
         doBlockCollisions()
+        checkForLevelComplete()
 
         const [distX, distY] = ballIntersects(px, py, pw, ph)
 
@@ -181,9 +199,9 @@ const render = () => {
     stage.fillStyle = 'black'
     stage.fillRect(0, 0, sw, sh)
 
-    for (let j = 0; j < blocks[level].length; j++) {
-        for (let i = 0; i < blocks[level][j].length; i++) {
-            if (blocks[level][j][i] != 0) {
+    for (let j = 0; j < currentLevel.length; j++) {
+        for (let i = 0; i < currentLevel[j].length; i++) {
+            if (currentLevel[j][i] != 0) {
                 stage.fillStyle = 'purple'
                 stage.fillRect(20 + (i * blkW) * 1.4,
                                (j * blkH) + 20,
