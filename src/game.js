@@ -1,7 +1,7 @@
 const canvas = document.getElementById('stage')
 , stage = canvas.getContext('2d')
 , sw = 480
-, sh = 800
+, sh = 720
 , pi = Math.PI
 , ballStates = {
     GRABBED: 0,
@@ -23,12 +23,12 @@ let then = Date.now()
 , state = gameStates.RUNNING
 , br = 12.0 // b - ball
 , bx = (sw / 2)
-, by = 750
+, by = 670
 , bxV = -2
 , byV = -8
 , bState = ballStates.GRABBED
 , px = sw / 2 // p - paddle
-, py = 780
+, py = 700
 , pw = 60
 , ph = 20
 , pA = 0.895
@@ -38,7 +38,7 @@ let then = Date.now()
 , tries = 3
 , level = 1
 , blocks = {
-    1: [[0, 0, 0, 0, 0, 0 ]]
+    1: [[1, 1, 1, 1, 1, 1]]
 }
 
 canvas.width = sw
@@ -91,6 +91,41 @@ const updatePaddle = () => {
     px += pS * pV
 }
 
+const ballIntersects = (x, y, w, h) => {
+    const closestX = clamp(bx, x - w / 2, x + w / 2)
+    , closestY = clamp(by, y - h / 2, y + h / 2)
+    , distX = bx - closestX
+    , distY = by - closestY
+    , dist = (distX * distX) + (distY * distY)
+
+    if (dist < (br * br)) {
+        return [distX, distY]
+    } else {
+        return [null, null]
+    }
+}
+
+const doBlockCollisions = () => {
+    const currentBlocks = blocks[level]
+    for (let j = 0; j < currentBlocks.length; j++) {
+        for (let i = 0; i < currentBlocks[j].length; i++) {
+            if (currentBlocks[j][i] != 0) {
+                const blkX = 20 + (i * blkW) * 1.4
+                ,     blkY = (j * blkH) + 20
+                const [distX, distY] = ballIntersects(blkX, blkY, blkW, blkH)
+                if (distX != null && distY != null) {
+                    if (distY < distX) {
+                        byV = -byV
+                    } else {
+                        bxV = -bxV
+                    }
+                    currentBlocks[j][i] = 0
+                }
+            }
+        }
+    }
+}
+
 const update = dt => {
     if (state === gameStates.GAMEOVER && btn('Space')) {
         tries = 3
@@ -123,13 +158,11 @@ const update = dt => {
             bxV = -bxV
         }
 
-        const closestX = clamp(bx, px - pw / 2, px + pw / 2)
-        , closestY = clamp(by, py - ph / 2, py + ph / 2)
-        , distX = bx - closestX
-        , distY = by - closestY
-        , dist = (distX * distX) + (distY * distY)
+        doBlockCollisions()
 
-        if (dist < (br * br)) {
+        const [distX, distY] = ballIntersects(px, py, pw, ph)
+
+        if (distX != null && distY != null) {
             if (distY < distX) {
                 byV = -byV
             } else {
@@ -148,13 +181,14 @@ const render = () => {
     stage.fillStyle = 'black'
     stage.fillRect(0, 0, sw, sh)
 
-    stage.fillStyle = 'purple'
     for (let j = 0; j < blocks[level].length; j++) {
         for (let i = 0; i < blocks[level][j].length; i++) {
-            stage.fillStyle = 'purple'
-            stage.fillRect(20 + (i * blkW) * 1.4,
-                           (j * blkH) + 20,
-                           blkW, blkH)
+            if (blocks[level][j][i] != 0) {
+                stage.fillStyle = 'purple'
+                stage.fillRect(20 + (i * blkW) * 1.4,
+                               (j * blkH) + 20,
+                               blkW, blkH)
+            }
         }
     }
 
